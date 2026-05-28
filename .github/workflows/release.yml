@@ -1,0 +1,93 @@
+name: Release
+
+# Tag a release with `git tag vX.Y.Z && git push --tags`.
+# The tag's version (after the leading 'v') must match the `version`
+# field in pyproject.toml or this workflow fails fast.
+#
+# PyPI publishing uses trusted publishing (OIDC) — no API tokens.
+# One-time setup, before the first release:
+#   1. Reserve the project name on PyPI (or use an existing one).
+#   2. Project Settings → Publishing → Add a new trusted publisher with:
+#        Owner:          jonathanspw    (or the repo owner you push from)
+#        Repository:     mirror-mirage
+#        Workflow name:  release.yml
+#        Environment:    pypi
+#   3. In the GitHub repo: Settings → Environments → create `pypi`.
+#      Recommended: enable "Required reviewers" so a human approves before
+#      anything actually lands on PyPI.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Verify tag matches pyproject.toml version
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::tag v${TAG} does not match pyproject version ${VERSION}"
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Install build
+        run: pip install build
+      - name: Build distributions
+        run: python -m build
+      - name: List artifacts
+        run: ls -la dist/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/mirror-mirage
+    permissions:
+      id-token: write   # required for trusted publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub release
+    needs: [build, publish-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to create the release
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: v${{ needs.build.outputs.version }}
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

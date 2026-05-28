@@ -1,0 +1,62 @@
+# Mirror Mirage CDN flush daemon — example configuration.
+# Install at /etc/mirror-mirage/config.yaml.
+#
+# The CDN names below (fastly_main, cloudfront_us, gcp_eu) are arbitrary
+# identifiers — pick anything that makes sense for your deployment. They
+# must match the top-level keys in secrets.yaml.
+
+cdns:
+  fastly_main:
+    type: fastly
+    service_id: XXX   # your Fastly service ID
+
+  cloudfront_us:
+    type: cloudfront
+    distribution_id: XXX
+    region: us-east-1
+
+  gcp_eu:
+    type: gcp_cdn
+    project: your-project
+    url_map: your-cdn-url-map
+    # Client-side pacing — keeps the daemon under GCP's default quota of
+    # 500 invalidations/minute. Raise only if your project has a higher
+    # quota approved.
+    quota_per_minute: 500
+
+watches:
+  # Replace these paths and URL prefixes with the mirror trees and CDN
+  # hostnames you serve. Each watch can fan out to any subset of the CDNs
+  # defined above.
+  - path: /srv/mirror/example-distro
+    ignore:
+      - "**/.~tmp~/**"   # rsync --delay-updates staging dirs
+      - "**/.nfs*"       # NFS silly-rename artifacts
+    # File deletions are ignored by default. Set this to true if you
+    # want the cached 404 for a removed URL to be invalidated as well.
+    # CloudFront bills per invalidation path; off is usually right.
+    flush_on_delete: false
+    bindings:
+      - cdn: fastly_main
+        url_prefix: https://repo.example.org/example-distro/
+      - cdn: cloudfront_us
+        url_prefix: https://cdn-us.example.org/example-distro/
+      - cdn: gcp_eu
+        url_prefix: https://cdn-eu.example.org/example-distro/
+
+  - path: /srv/mirror/archive
+    ignore:
+      - "**/.~tmp~/**"
+    bindings:
+      - cdn: fastly_main
+        url_prefix: https://archive.example.org/
+
+daemon:
+  batch_quiet_window_seconds: 10
+  batch_max_size: 500
+  batch_max_age_seconds: 60
+  queue_db: /var/lib/mirror-mirage/queue.db
+  retry:
+    max_attempts: 8
+    initial_backoff_seconds: 5
+    max_backoff_seconds: 300

@@ -1,0 +1,25 @@
+Mirror Mirage — Inotify-driven CDN cache-flush daemon for filesystem mirrors
+Copyright (C) 2026 AlmaLinux OS Foundation and contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+----------------------------------------------------------------------
+NOTE FOR PACKAGERS
+----------------------------------------------------------------------
+For Fedora / Red Hat ecosystem packaging review, this file must contain
+the FULL TEXT of the GNU General Public License, version 3. Fetch it
+from <https://www.gnu.org/licenses/gpl-3.0.txt> and replace this file
+in its entirety (the notice above is the standard FSF "how to apply"
+short form and is sufficient for source headers, but the LICENSE file
+in distribution tarballs is expected to contain the canonical text).

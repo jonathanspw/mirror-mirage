@@ -1,0 +1,51 @@
+[Unit]
+Description=Mirror Mirage CDN flush daemon
+Documentation=https://github.com/AlmaLinux/mirror-mirage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mirror-mirage
+Group=mirror-mirage
+ExecStart=/usr/bin/mirror-mirage --config /etc/mirror-mirage/config.yaml
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+# Standard hardening — the daemon only needs to read its mirror tree and
+# write under /var/lib/mirror-mirage.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+# ProcSubset=pid intentionally NOT set — the daemon reads
+# /proc/sys/fs/inotify/max_user_watches at startup to size the watch
+# budget. ProtectKernelTunables=true above still prevents writes.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+
+ConfigurationDirectory=mirror-mirage
+StateDirectory=mirror-mirage
+ReadWritePaths=/var/lib/mirror-mirage
+# Mirror trees are read-only — defense in depth. Operators may override
+# this via a drop-in if their mirror lives elsewhere.
+ReadOnlyPaths=/srv/mirror
+
+[Install]
+WantedBy=multi-user.target

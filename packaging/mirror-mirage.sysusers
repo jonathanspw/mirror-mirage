@@ -1,0 +1,2 @@
+#Type Name          ID   GECOS                             Home directory          Shell
+u     mirror-mirage  -    "Mirror Mirage CDN flush daemon"  /var/lib/mirror-mirage  /usr/sbin/nologin
